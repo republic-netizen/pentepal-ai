@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
+import { useTheme } from '../lib/useTheme';
+import ThemeToggle from '../components/ThemeToggle';
 
 const SUBJECTS = [
   { label: 'Mathematics', prompt: 'Can you help me with a Mathematics problem?' },
@@ -14,6 +16,7 @@ const SUBJECTS = [
 
 export default function Chat() {
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
   const [session, setSession] = useState(null);
   const [username, setUsername] = useState('');
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -195,12 +198,15 @@ export default function Chat() {
         </nav>
 
         <div className="sidebar-footer">
-          <div className="user-chip">
-            <div className="avatar">{(username || '?').charAt(0).toUpperCase()}</div>
-            <div className="user-meta">
-              <div className="user-name">{username || 'Student'}</div>
-              <div className="user-sub">Signed in</div>
+          <div className="user-row">
+            <div className="user-chip">
+              <div className="avatar">{(username || '?').charAt(0).toUpperCase()}</div>
+              <div className="user-meta">
+                <div className="user-name">{username || 'Student'}</div>
+                <div className="user-sub">Signed in</div>
+              </div>
             </div>
+            <ThemeToggle theme={theme} onToggle={toggleTheme} variant="light" />
           </div>
           <button className="logout-link" onClick={handleLogout}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
@@ -374,11 +380,18 @@ export default function Chat() {
           padding-top: 14px;
           margin-top: 14px;
         }
+        .user-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          margin-bottom: 10px;
+        }
         .user-chip {
           display: flex;
           align-items: center;
           gap: 10px;
-          margin-bottom: 10px;
+          min-width: 0;
         }
         .avatar {
           width: 30px;
