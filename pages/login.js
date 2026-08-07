@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
+import { useTheme } from '../lib/useTheme';
+import ThemeToggle from '../components/ThemeToggle';
 
 export default function Login() {
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
   const [mode, setMode] = useState('login'); // 'login' | 'signup'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -145,6 +148,9 @@ export default function Login() {
     <div className="page">
       <div className="card">
         <div className="banner">
+          <div className="banner-toggle">
+            <ThemeToggle theme={theme} onToggle={toggleTheme} variant="light" />
+          </div>
           <div className="crest">
             <img src="/logo.jpg" alt="Pentecost Preparatory School crest" />
           </div>
@@ -284,6 +290,12 @@ export default function Login() {
           color: var(--white);
           padding: 26px 24px 20px;
           text-align: center;
+          position: relative;
+        }
+        .banner-toggle {
+          position: absolute;
+          top: 14px;
+          right: 14px;
         }
         .crest {
           width: 56px;
