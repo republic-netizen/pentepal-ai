@@ -15,12 +15,14 @@ const SUBJECTS = [
 export default function Chat() {
   const router = useRouter();
   const [session, setSession] = useState(null);
+  const [username, setUsername] = useState('');
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [messages, setMessages] = useState([]); // { role, content }
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const chatRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -48,6 +50,15 @@ export default function Chat() {
   useEffect(() => {
     if (!session) return;
 
+    async function loadProfile() {
+      const { data } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', session.user.id)
+        .single();
+      if (data?.username) setUsername(data.username);
+    }
+
     async function loadHistory() {
       setLoadingHistory(true);
       const { data, error } = await supabase
@@ -63,6 +74,7 @@ export default function Chat() {
       setLoadingHistory(false);
     }
 
+    loadProfile();
     loadHistory();
   }, [session]);
 
@@ -98,6 +110,7 @@ export default function Chat() {
     setMessages(nextMessages);
     setInput('');
     setSending(true);
+    setSidebarOpen(false);
     saveMessage('user', trimmed);
 
     try {
@@ -138,6 +151,12 @@ export default function Chat() {
     }
   }
 
+  function handleSubjectClick(prompt) {
+    setInput(prompt);
+    setSidebarOpen(false);
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut();
     router.replace('/login');
@@ -152,123 +171,152 @@ export default function Chat() {
   }
 
   return (
-    <div className="app">
-      <header>
-        <div className="header-row">
+    <div className="shell">
+      {sidebarOpen && <div className="scrim" onClick={() => setSidebarOpen(false)} />}
+
+      <aside className={sidebarOpen ? 'sidebar open' : 'sidebar'}>
+        <div className="sidebar-brand">
           <div className="crest">
             <img src="/logo.jpg" alt="Pentecost Preparatory School crest" />
           </div>
-          <div className="brand-text">
+          <div>
             <h1 className="font-display">PentePal</h1>
-            <p>Your study companion</p>
+            <p>Pentecost Prep School</p>
           </div>
-          <button className="logout-btn" onClick={handleLogout} aria-label="Log out">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        </div>
+
+        <div className="sidebar-section-label">Subjects</div>
+        <nav className="subject-nav">
+          {SUBJECTS.map((s) => (
+            <button key={s.label} className="subject-link" onClick={() => handleSubjectClick(s.prompt)}>
+              {s.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="sidebar-footer">
+          <div className="user-chip">
+            <div className="avatar">{(username || '?').charAt(0).toUpperCase()}</div>
+            <div className="user-meta">
+              <div className="user-name">{username || 'Student'}</div>
+              <div className="user-sub">Signed in</div>
+            </div>
+          </div>
+          <button className="logout-link" onClick={handleLogout}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
               <path d="M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
+            Log out
           </button>
         </div>
-        <div className="school-name">Pentecost Preparatory School</div>
-        <svg className="steps" viewBox="0 0 400 14" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M0 14 L0 10 L40 10 L40 7 L80 7 L80 4 L400 4" fill="none" stroke="#4E93C4" strokeWidth="1.5" opacity="0.55" />
-        </svg>
-      </header>
+      </aside>
 
-      <div className="subject-rail">
-        {SUBJECTS.map((s) => (
-          <button key={s.label} className="chip" onClick={() => setInput(s.prompt)}>
-            {s.label}
+      <div className="main">
+        <header>
+          <button className="menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
           </button>
-        ))}
-      </div>
-
-      <div id="chat" ref={chatRef}>
-        {loadingHistory ? (
-          <div className="empty-state">
-            <p>Loading your conversation...</p>
+          <div className="header-text">
+            <h2 className="font-display">Your study companion</h2>
+            <p>Ask anything, get a clear answer</p>
           </div>
-        ) : messages.length === 0 ? (
-          <div className="empty-state">
-            <div className="mark font-display">Ask away.</div>
-            <p>
-              Pick a subject above or type your question below.
-              <br />
-              I&apos;ll keep every answer short and clear.
-            </p>
-          </div>
-        ) : (
-          messages.map((m, i) => (
-            <div key={i} className={`msg ${m.role === 'user' ? 'user' : 'bot'}`}>
-              {m.role !== 'user' && <span className="label">PentePal</span>}
-              {m.content}
-            </div>
-          ))
-        )}
-
-        {sending && (
-          <div className="typing">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-        )}
-
-        {errorMsg && <div className="msg error">{errorMsg}</div>}
-      </div>
-
-      <div className="hint">PentePal gives concise answers — ask a follow-up any time.</div>
-
-      <form id="composer" onSubmit={handleSubmit}>
-        <textarea
-          ref={textareaRef}
-          rows={1}
-          placeholder="Type your question..."
-          aria-label="Your question"
-          value={input}
-          onChange={(e) => {
-            setInput(e.target.value);
-            autoGrow();
-          }}
-          onKeyDown={handleKeyDown}
-        />
-        <button type="submit" id="sendBtn" aria-label="Send question" disabled={sending || !input.trim()}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M4 12L20 4L13 20L11 13L4 12Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
+          <svg className="steps" viewBox="0 0 400 14" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M0 14 L0 10 L40 10 L40 7 L80 7 L80 4 L400 4" fill="none" stroke="#4E93C4" strokeWidth="1.5" opacity="0.55" />
           </svg>
-        </button>
-      </form>
+        </header>
+
+        <div id="chat" ref={chatRef}>
+          {loadingHistory ? (
+            <div className="empty-state">
+              <p>Loading your conversation...</p>
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="empty-state">
+              <div className="mark font-display">Ask away.</div>
+              <p>
+                Pick a subject from the sidebar or type your question below.
+                <br />
+                I&apos;ll keep every answer short and clear.
+              </p>
+            </div>
+          ) : (
+            messages.map((m, i) => (
+              <div key={i} className={`msg ${m.role === 'user' ? 'user' : 'bot'}`}>
+                {m.role !== 'user' && <span className="label">PentePal</span>}
+                {m.content}
+              </div>
+            ))
+          )}
+
+          {sending && (
+            <div className="typing">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          )}
+
+          {errorMsg && <div className="msg error">{errorMsg}</div>}
+        </div>
+
+        <div className="hint">PentePal gives concise answers — ask a follow-up any time.</div>
+
+        <form id="composer" onSubmit={handleSubmit}>
+          <textarea
+            ref={textareaRef}
+            rows={1}
+            placeholder="Type your question..."
+            aria-label="Your question"
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value);
+              autoGrow();
+            }}
+            onKeyDown={handleKeyDown}
+          />
+          <button type="submit" id="sendBtn" aria-label="Send question" disabled={sending || !input.trim()}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M4 12L20 4L13 20L11 13L4 12Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
+            </svg>
+          </button>
+        </form>
+      </div>
 
       <style jsx>{`
-        .app {
+        .shell {
           height: 100vh;
           display: flex;
-          flex-direction: column;
-          max-width: 760px;
-          margin: 0 auto;
           background: var(--white);
-          box-shadow: 0 0 40px rgba(8, 22, 51, 0.08);
-          overflow: hidden;
         }
-        header {
-          background: linear-gradient(160deg, var(--navy-deep) 0%, var(--navy) 65%, var(--sea) 130%);
-          color: var(--white);
-          padding: 18px 20px 22px;
+
+        /* ---------- Sidebar ---------- */
+        .sidebar {
+          width: 250px;
           flex-shrink: 0;
+          background: linear-gradient(180deg, var(--navy-deep) 0%, var(--navy) 100%);
+          color: var(--white);
+          display: flex;
+          flex-direction: column;
+          padding: 20px 16px;
         }
-        .header-row {
+        .sidebar-brand {
           display: flex;
           align-items: center;
-          gap: 14px;
+          gap: 10px;
+          padding-bottom: 18px;
+          margin-bottom: 16px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.12);
         }
         .crest {
-          width: 46px;
-          height: 46px;
+          width: 38px;
+          height: 38px;
           border-radius: 50%;
           background: var(--white);
-          padding: 4px;
+          padding: 3px;
           flex-shrink: 0;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
         }
         .crest img {
           width: 100%;
@@ -276,80 +324,148 @@ export default function Chat() {
           object-fit: contain;
           border-radius: 50%;
         }
-        .brand-text {
-          flex: 1;
-        }
-        .brand-text h1 {
+        .sidebar-brand h1 {
           font-weight: 600;
-          font-size: 22px;
-          line-height: 1.1;
+          font-size: 16.5px;
           margin: 0;
         }
-        .brand-text p {
-          margin: 3px 0 0;
-          font-size: 12.5px;
-          color: #c7d9ee;
-          font-weight: 500;
+        .sidebar-brand p {
+          margin: 1px 0 0;
+          font-size: 10px;
+          color: #9fbbda;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.6px;
         }
-        .logout-btn {
-          background: rgba(255, 255, 255, 0.12);
+        .sidebar-section-label {
+          font-size: 10.5px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.8px;
+          color: #7d9bc2;
+          margin-bottom: 8px;
+          padding: 0 4px;
+        }
+        .subject-nav {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          flex: 1;
+          overflow-y: auto;
+        }
+        :global(.subject-link) {
+          text-align: left;
+          background: none;
           border: none;
+          color: #dce8f6;
+          font-size: 13.5px;
+          font-weight: 500;
+          padding: 9px 10px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-family: inherit;
+        }
+        :global(.subject-link:hover) {
+          background: rgba(255, 255, 255, 0.08);
           color: var(--white);
-          width: 32px;
-          height: 32px;
+        }
+        .sidebar-footer {
+          border-top: 1px solid rgba(255, 255, 255, 0.12);
+          padding-top: 14px;
+          margin-top: 14px;
+        }
+        .user-chip {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 10px;
+        }
+        .avatar {
+          width: 30px;
+          height: 30px;
           border-radius: 50%;
+          background: var(--sea);
           display: flex;
           align-items: center;
           justify-content: center;
-          cursor: pointer;
+          font-size: 13px;
+          font-weight: 700;
           flex-shrink: 0;
         }
-        .logout-btn:hover {
-          background: rgba(255, 255, 255, 0.22);
-        }
-        .school-name {
-          margin: 12px 0 0;
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: 1.4px;
-          color: #9fbbda;
+        .user-name {
+          font-size: 13px;
           font-weight: 600;
         }
-        .steps {
-          height: 14px;
-          width: 100%;
-          display: block;
-          margin-top: 16px;
+        .user-sub {
+          font-size: 10.5px;
+          color: #9fbbda;
         }
-        .subject-rail {
+        :global(.logout-link) {
           display: flex;
-          gap: 8px;
-          padding: 12px 16px;
-          overflow-x: auto;
-          background: var(--foam);
-          border-bottom: 1px solid var(--line);
-          flex-shrink: 0;
-        }
-        :global(.chip) {
-          flex-shrink: 0;
-          padding: 7px 14px;
-          border-radius: 999px;
-          border: 1.5px solid var(--sea-light);
-          background: var(--white);
-          color: var(--navy);
+          align-items: center;
+          gap: 6px;
+          width: 100%;
+          background: rgba(255, 255, 255, 0.08);
+          border: none;
+          color: #dce8f6;
           font-size: 12.5px;
           font-weight: 600;
+          padding: 8px 10px;
+          border-radius: 8px;
           cursor: pointer;
-          white-space: nowrap;
+          font-family: inherit;
         }
-        :global(.chip:hover) {
-          background: var(--sea);
-          color: var(--white);
+        :global(.logout-link:hover) {
+          background: rgba(255, 255, 255, 0.15);
+        }
+
+        .scrim {
+          display: none;
+        }
+
+        /* ---------- Main panel ---------- */
+        .main {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+        }
+        header {
+          background: var(--white);
+          border-bottom: 1px solid var(--line);
+          padding: 18px 24px 16px;
+          flex-shrink: 0;
+          position: relative;
+        }
+        .header-text h2 {
+          font-weight: 600;
+          font-size: 19px;
+          margin: 0;
+          color: var(--navy);
+        }
+        .header-text p {
+          margin: 3px 0 0;
+          font-size: 12.5px;
+          color: var(--mist);
+        }
+        .menu-btn {
+          display: none;
+          background: none;
+          border: none;
+          color: var(--navy);
+          cursor: pointer;
+          margin-bottom: 8px;
+        }
+        .steps {
+          height: 10px;
+          width: 100%;
+          display: block;
+          margin-top: 14px;
         }
         #chat {
           flex: 1;
           overflow-y: auto;
-          padding: 20px 16px 12px;
+          padding: 24px 24px 12px;
           display: flex;
           flex-direction: column;
           gap: 14px;
@@ -373,7 +489,7 @@ export default function Chat() {
           line-height: 1.5;
         }
         :global(.msg) {
-          max-width: 82%;
+          max-width: 70%;
           padding: 11px 14px;
           border-radius: 16px;
           font-size: 14.5px;
@@ -456,7 +572,7 @@ export default function Chat() {
           display: flex;
           align-items: flex-end;
           gap: 8px;
-          padding: 12px 14px;
+          padding: 12px 20px 18px;
           border-top: 1px solid var(--line);
           background: var(--white);
           flex-shrink: 0;
@@ -499,12 +615,30 @@ export default function Chat() {
           background: var(--mist);
           cursor: not-allowed;
         }
-        @media (max-width: 480px) {
-          .app {
-            max-width: 100%;
+
+        @media (max-width: 820px) {
+          .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 30;
+            transform: translateX(-100%);
+            transition: transform 0.2s ease;
+            box-shadow: 8px 0 24px rgba(8, 22, 51, 0.2);
           }
-          .brand-text h1 {
-            font-size: 19px;
+          .sidebar.open {
+            transform: translateX(0);
+          }
+          .scrim {
+            display: block;
+            position: fixed;
+            inset: 0;
+            background: rgba(8, 22, 51, 0.4);
+            z-index: 20;
+          }
+          .menu-btn {
+            display: inline-flex;
           }
         }
       `}</style>
