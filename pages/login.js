@@ -2,12 +2,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 
-const CLASS_OPTIONS = [
-  'Creche', 'Nursery 1', 'Nursery 2', 'KG 1', 'KG 2',
-  'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6',
-  'JHS 1', 'JHS 2', 'JHS 3',
-];
-
 export default function Login() {
   const router = useRouter();
   const [mode, setMode] = useState('login'); // 'login' | 'signup'
@@ -16,15 +10,13 @@ export default function Login() {
   const [notice, setNotice] = useState('');
 
   // Signup fields
-  const [fullName, setFullName] = useState('');
-  const [className, setClassName] = useState('');
-  const [studentId, setStudentId] = useState('');
+  const [signupUsername, setSignupUsername] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPw, setSignupPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
 
   // Login fields
-  const [loginEmail, setLoginEmail] = useState('');
+  const [loginUsername, setLoginUsername] = useState('');
   const [loginPw, setLoginPw] = useState('');
 
   useEffect(() => {
@@ -44,8 +36,18 @@ export default function Login() {
     setError('');
     setNotice('');
 
-    if (!fullName.trim() || !className || !studentId.trim() || !signupEmail.trim()) {
+    const username = signupUsername.trim();
+
+    if (!username || !signupEmail.trim()) {
       setError('Please fill in every field.');
+      return;
+    }
+    if (username.length < 3) {
+      setError('Username must be at least 3 characters.');
+      return;
+    }
+    if (!/^[a-zA-Z0-9_.]+$/.test(username)) {
+      setError('Username can only contain letters, numbers, dots, and underscores.');
       return;
     }
     if (signupPw.length < 6) {
@@ -58,6 +60,7 @@ export default function Login() {
     }
 
     setLoading(true);
+
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: signupEmail.trim(),
       password: signupPw,
@@ -73,13 +76,18 @@ export default function Login() {
     if (userId) {
       const { error: profileError } = await supabase.from('profiles').insert({
         id: userId,
-        full_name: fullName.trim(),
-        class_name: className,
-        student_id: studentId.trim(),
+        username,
         email: signupEmail.trim(),
       });
       if (profileError) {
-        console.error('Profile insert failed:', profileError);
+        setLoading(false);
+        // Most likely cause: the username is already taken (unique index).
+        if (profileError.code === '23505') {
+          setError('That username is already taken. Try another one.');
+        } else {
+          setError('Could not finish creating your account. Please try again.');
+        }
+        return;
       }
     }
 
@@ -100,20 +108,34 @@ export default function Login() {
     setError('');
     setNotice('');
 
-    if (!loginEmail.trim() || !loginPw) {
-      setError('Enter your email and password.');
+    const username = loginUsername.trim();
+    if (!username || !loginPw) {
+      setError('Enter your username and password.');
       return;
     }
 
     setLoading(true);
+
+    // Students log in with a username, but Supabase auth works by email —
+    // so first look up the email that belongs to this username.
+    const { data: email, error: lookupError } = await supabase.rpc('get_email_for_username', {
+      p_username: username,
+    });
+
+    if (lookupError || !email) {
+      setLoading(false);
+      setError("That username and password don't match any account yet.");
+      return;
+    }
+
     const { error: loginError } = await supabase.auth.signInWithPassword({
-      email: loginEmail.trim(),
+      email,
       password: loginPw,
     });
     setLoading(false);
 
     if (loginError) {
-      setError(loginError.message);
+      setError("That username and password don't match any account yet.");
       return;
     }
     router.replace('/chat');
@@ -148,14 +170,14 @@ export default function Login() {
         {mode === 'login' ? (
           <form onSubmit={handleLogin} className="panel">
             <div className="field">
-              <label htmlFor="loginEmail">School email</label>
+              <label htmlFor="loginUsername">Username</label>
               <input
-                id="loginEmail"
-                type="email"
+                id="loginUsername"
+                type="text"
                 autoComplete="username"
-                placeholder="e.g. jane.mensah@pentecostprep.edu.gh"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
+                placeholder="e.g. jane_mensah"
+                value={loginUsername}
+                onChange={(e) => setLoginUsername(e.target.value)}
               />
             </div>
             <div className="field">
@@ -182,41 +204,18 @@ export default function Login() {
         ) : (
           <form onSubmit={handleSignup} className="panel">
             <div className="field">
-              <label htmlFor="fullName">Full name</label>
+              <label htmlFor="signupUsername">Username</label>
               <input
-                id="fullName"
+                id="signupUsername"
                 type="text"
-                autoComplete="name"
-                placeholder="e.g. Jane Mensah"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                autoComplete="username"
+                placeholder="e.g. jane_mensah"
+                value={signupUsername}
+                onChange={(e) => setSignupUsername(e.target.value)}
               />
             </div>
-            <div className="row-2">
-              <div className="field">
-                <label htmlFor="classLevel">Class</label>
-                <select id="classLevel" value={className} onChange={(e) => setClassName(e.target.value)}>
-                  <option value="">Select</option>
-                  {CLASS_OPTIONS.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label htmlFor="studentId">Student ID</label>
-                <input
-                  id="studentId"
-                  type="text"
-                  placeholder="e.g. PPS-0231"
-                  value={studentId}
-                  onChange={(e) => setStudentId(e.target.value)}
-                />
-              </div>
-            </div>
             <div className="field">
-              <label htmlFor="signupEmail">School email</label>
+              <label htmlFor="signupEmail">Email</label>
               <input
                 id="signupEmail"
                 type="email"
@@ -362,8 +361,7 @@ export default function Login() {
           color: var(--navy);
           margin-bottom: 6px;
         }
-        :global(.field input),
-        :global(.field select) {
+        :global(.field input) {
           width: 100%;
           padding: 11px 13px;
           border-radius: 10px;
@@ -373,16 +371,10 @@ export default function Login() {
           color: var(--ink);
           background: var(--foam);
         }
-        :global(.field input:focus),
-        :global(.field select:focus) {
+        :global(.field input:focus) {
           outline: none;
           border-color: var(--sea);
           background: var(--white);
-        }
-        :global(.row-2) {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 12px;
         }
         :global(.submit-btn) {
           width: 100%;
