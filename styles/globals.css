@@ -13,6 +13,25 @@
   --error: #b3392f;
   --error-bg: #fbeaea;
   --radius: 16px;
+
+  color-scheme: light;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+[data-theme='dark'] {
+  --navy-deep: #050c1c;
+  --navy: #14295a;
+  --sea: #2f84bb;
+  --sea-light: #5aa4d6;
+  --foam: #0a1122;
+  --white: #121b33;
+  --mist: #93a8c9;
+  --ink: #e8eefa;
+  --line: #253355;
+  --error: #ff8577;
+  --error-bg: rgba(179, 57, 47, 0.18);
+
+  color-scheme: dark;
 }
 
 * {
