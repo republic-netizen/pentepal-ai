@@ -7,5 +7,5 @@
 // api/chat.js's server-side environment variable, never in a file the
 // browser can read.
 
-export const SUPABASE_URL = "https://YOUR-PROJECT-REF.supabase.co";
-export const SUPABASE_ANON_KEY = "your-publishable-key";
+export const SUPABASE_URL = "https://ougbazmguvifrfartfns.supabase.co";
+export const SUPABASE_ANON_KEY = "sb_publishable_tJMlTU2en_f4q3uF0qz1uQ_E2eu9Axp";
