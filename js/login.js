@@ -3,6 +3,9 @@ import { initThemeToggle } from './theme.js';
 
 initThemeToggle(document.getElementById('themeToggle'));
 
+const yearEl = document.getElementById('yearNow');
+if (yearEl) yearEl.textContent = new Date().getFullYear();
+
 // If already logged in, skip straight to chat.
 supabase.auth.getSession().then(({ data }) => {
   if (data.session) window.location.href = 'chat.html';
@@ -39,6 +42,17 @@ tabLogin.addEventListener('click', () => showTab('login'));
 tabSignup.addEventListener('click', () => showTab('signup'));
 document.getElementById('goSignup').addEventListener('click', () => showTab('signup'));
 document.getElementById('goLogin').addEventListener('click', () => showTab('login'));
+
+// ---------- Show/hide password ----------
+document.querySelectorAll('.pw-toggle').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const input = document.getElementById(btn.dataset.target);
+    const showing = input.type === 'text';
+    input.type = showing ? 'password' : 'text';
+    btn.classList.toggle('showing', !showing);
+    btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+  });
+});
 
 // ---------- Sign up ----------
 document.getElementById('signupPanel').addEventListener('submit', async (e) => {

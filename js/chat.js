@@ -3,8 +3,10 @@ import { initThemeToggle } from './theme.js';
 
 initThemeToggle(document.getElementById('themeToggle'));
 
+const yearEl = document.getElementById('yearNow');
+if (yearEl) yearEl.textContent = new Date().getFullYear();
+
 const chatEl = document.getElementById('chat');
-const emptyState = document.getElementById('emptyState');
 const composer = document.getElementById('composer');
 const promptInput = document.getElementById('promptInput');
 const sendBtn = document.getElementById('sendBtn');
@@ -13,8 +15,12 @@ const scrim = document.getElementById('scrim');
 const menuBtn = document.getElementById('menuBtn');
 const usernameLabel = document.getElementById('usernameLabel');
 const avatarInitial = document.getElementById('avatarInitial');
+const conversationNav = document.getElementById('conversationNav');
+const newChatBtn = document.getElementById('newChatBtn');
 
 let session = null;
+let conversations = []; // { id, title, created_at }
+let currentConversationId = null;
 let messages = []; // { role, content }
 let sending = false;
 
@@ -32,7 +38,6 @@ supabase.auth.onAuthStateChange((_event, newSession) => {
 });
 
 async function init() {
-  // Load profile (for the username shown in the sidebar)
   const { data: profile } = await supabase
     .from('profiles')
     .select('username')
@@ -44,19 +49,127 @@ async function init() {
     avatarInitial.textContent = profile.username.charAt(0).toUpperCase();
   }
 
-  // Load message history
+  await loadConversations();
+
+  if (conversations.length > 0) {
+    await openConversation(conversations[0].id);
+  } else {
+    await startNewConversation();
+  }
+}
+
+// ---------- Conversations ----------
+async function loadConversations() {
+  const { data, error } = await supabase
+    .from('conversations')
+    .select('id, title, created_at')
+    .eq('user_id', session.user.id)
+    .order('created_at', { ascending: false });
+
+  if (!error && data) conversations = data;
+  renderConversationList();
+}
+
+function renderConversationList() {
+  conversationNav.innerHTML = '';
+
+  if (conversations.length === 0) {
+    const div = document.createElement('div');
+    div.className = 'conversation-empty';
+    div.textContent = 'No chats yet — start one below.';
+    conversationNav.appendChild(div);
+    return;
+  }
+
+  const groups = groupConversationsByDate(conversations);
+
+  groups.forEach((group) => {
+    if (group.items.length === 0) return;
+
+    const label = document.createElement('div');
+    label.className = 'conversation-group-label';
+    label.textContent = group.label;
+    conversationNav.appendChild(label);
+
+    group.items.forEach((c) => {
+      const btn = document.createElement('button');
+      btn.className = 'conversation-item' + (c.id === currentConversationId ? ' active' : '');
+      btn.textContent = c.title || 'New chat';
+      btn.addEventListener('click', () => {
+        openConversation(c.id);
+        closeSidebar();
+      });
+      conversationNav.appendChild(btn);
+    });
+  });
+}
+
+function groupConversationsByDate(list) {
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfYesterday = new Date(startOfToday);
+  startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+  const startOfWeek = new Date(startOfToday);
+  startOfWeek.setDate(startOfWeek.getDate() - 7);
+
+  const buckets = {
+    today: { label: 'Today', items: [] },
+    yesterday: { label: 'Yesterday', items: [] },
+    week: { label: 'Previous 7 days', items: [] },
+    older: { label: 'Older', items: [] },
+  };
+
+  list.forEach((c) => {
+    const created = new Date(c.created_at);
+    if (created >= startOfToday) buckets.today.items.push(c);
+    else if (created >= startOfYesterday) buckets.yesterday.items.push(c);
+    else if (created >= startOfWeek) buckets.week.items.push(c);
+    else buckets.older.items.push(c);
+  });
+
+  return [buckets.today, buckets.yesterday, buckets.week, buckets.older];
+}
+
+async function startNewConversation() {
+  const { data, error } = await supabase
+    .from('conversations')
+    .insert({ user_id: session.user.id, title: 'New chat' })
+    .select('id, title, created_at')
+    .single();
+
+  if (error || !data) {
+    console.error('Could not start a new chat:', error);
+    return;
+  }
+
+  conversations.unshift(data);
+  currentConversationId = data.id;
+  messages = [];
+  renderConversationList();
+  renderMessages();
+  promptInput.focus();
+}
+
+async function openConversation(id) {
+  currentConversationId = id;
+  renderConversationList();
+
+  chatEl.innerHTML = '<div class="empty-state"><p>Loading...</p></div>';
+
   const { data, error } = await supabase
     .from('messages')
     .select('role, content, created_at')
-    .eq('user_id', session.user.id)
-    .order('created_at', { ascending: true })
-    .limit(100);
+    .eq('conversation_id', id)
+    .order('created_at', { ascending: true });
 
-  if (!error && data) {
-    messages = data.map((m) => ({ role: m.role, content: m.content }));
-  }
+  messages = !error && data ? data.map((m) => ({ role: m.role, content: m.content })) : [];
   renderMessages();
 }
+
+newChatBtn.addEventListener('click', () => {
+  startNewConversation();
+  closeSidebar();
+});
 
 // ---------- Sidebar (mobile) ----------
 menuBtn.addEventListener('click', () => {
@@ -78,7 +191,7 @@ document.getElementById('subjectNav').addEventListener('click', (e) => {
   promptInput.focus();
 });
 
-// ---------- Rendering ----------
+// ---------- Rendering messages ----------
 function renderMessages() {
   chatEl.innerHTML = '';
 
@@ -132,13 +245,33 @@ function showError(text) {
 
 // ---------- Sending messages ----------
 async function saveMessage(role, content) {
-  const { error } = await supabase.from('messages').insert({ user_id: session.user.id, role, content });
+  const { error } = await supabase
+    .from('messages')
+    .insert({ conversation_id: currentConversationId, user_id: session.user.id, role, content });
   if (error) console.error('Failed to save message:', error);
+}
+
+async function maybeRenameConversation(firstQuestion) {
+  const isFirstMessage = messages.length === 1; // just pushed the user's first message
+  if (!isFirstMessage) return;
+
+  const title = firstQuestion.length > 42 ? firstQuestion.slice(0, 42).trim() + '…' : firstQuestion;
+
+  const { error } = await supabase
+    .from('conversations')
+    .update({ title })
+    .eq('id', currentConversationId);
+
+  if (!error) {
+    const convo = conversations.find((c) => c.id === currentConversationId);
+    if (convo) convo.title = title;
+    renderConversationList();
+  }
 }
 
 async function sendMessage(question) {
   const trimmed = question.trim();
-  if (!trimmed || sending) return;
+  if (!trimmed || sending || !currentConversationId) return;
 
   messages.push({ role: 'user', content: trimmed });
   renderMessages();
@@ -147,6 +280,7 @@ async function sendMessage(question) {
   sending = true;
   sendBtn.disabled = true;
   saveMessage('user', trimmed);
+  maybeRenameConversation(trimmed);
   showTyping();
 
   try {

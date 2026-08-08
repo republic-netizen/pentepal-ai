@@ -20,16 +20,26 @@
       </div>
     </div>
 
-    <div class="sidebar-section-label">Subjects</div>
-    <nav class="subject-nav" id="subjectNav">
-      <button class="subject-link" data-prompt="Can you help me with a Mathematics problem?">Mathematics</button>
-      <button class="subject-link" data-prompt="Can you help explain something in English Language?">English</button>
-      <button class="subject-link" data-prompt="Can you help me with an Integrated Science question?">Science</button>
-      <button class="subject-link" data-prompt="Can you help me with Social Studies?">Social Studies</button>
-      <button class="subject-link" data-prompt="Can you help me with French?">French</button>
-      <button class="subject-link" data-prompt="Can you help me with ICT?">ICT</button>
-      <button class="subject-link" data-prompt="Can you help me with R.M.E?">R.M.E</button>
-    </nav>
+    <div class="sidebar-scroll">
+      <button class="new-chat-btn" id="newChatBtn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        New chat
+      </button>
+
+      <div class="sidebar-section-label">Recent chats</div>
+      <nav class="conversation-nav" id="conversationNav"></nav>
+
+      <div class="sidebar-section-label">Subjects</div>
+      <nav class="subject-nav" id="subjectNav">
+        <button class="subject-link" data-prompt="Can you help me with a Mathematics problem?">Mathematics</button>
+        <button class="subject-link" data-prompt="Can you help explain something in English Language?">English</button>
+        <button class="subject-link" data-prompt="Can you help me with an Integrated Science question?">Science</button>
+        <button class="subject-link" data-prompt="Can you help me with Social Studies?">Social Studies</button>
+        <button class="subject-link" data-prompt="Can you help me with French?">French</button>
+        <button class="subject-link" data-prompt="Can you help me with ICT?">ICT</button>
+        <button class="subject-link" data-prompt="Can you help me with R.M.E?">R.M.E</button>
+      </nav>
+    </div>
 
     <div class="sidebar-footer">
       <div class="user-row">
@@ -46,6 +56,7 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Log out
       </button>
+      <p class="footer-credit">© <span id="yearNow"></span> Pentecost Preparatory School</p>
     </div>
   </aside>
 

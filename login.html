@@ -36,7 +36,10 @@
       </div>
       <div class="field">
         <label for="loginPw">Password</label>
-        <input type="password" id="loginPw" autocomplete="current-password" placeholder="Enter your password" />
+        <div class="pw-wrap">
+          <input type="password" id="loginPw" autocomplete="current-password" placeholder="Enter your password" />
+          <button type="button" class="pw-toggle" data-target="loginPw" aria-label="Show password"></button>
+        </div>
       </div>
       <button type="submit" class="submit-btn" id="loginBtn">Log in</button>
       <div class="form-note">New to PentePal? <button type="button" id="goSignup">Create an account</button></div>
@@ -55,16 +58,23 @@
       </div>
       <div class="field">
         <label for="signupPw">Password</label>
-        <input type="password" id="signupPw" autocomplete="new-password" placeholder="At least 6 characters" />
+        <div class="pw-wrap">
+          <input type="password" id="signupPw" autocomplete="new-password" placeholder="At least 6 characters" />
+          <button type="button" class="pw-toggle" data-target="signupPw" aria-label="Show password"></button>
+        </div>
       </div>
       <div class="field">
         <label for="confirmPw">Confirm password</label>
-        <input type="password" id="confirmPw" autocomplete="new-password" placeholder="Re-enter your password" />
+        <div class="pw-wrap">
+          <input type="password" id="confirmPw" autocomplete="new-password" placeholder="Re-enter your password" />
+          <button type="button" class="pw-toggle" data-target="confirmPw" aria-label="Show password"></button>
+        </div>
       </div>
       <button type="submit" class="submit-btn" id="signupBtn">Create account</button>
       <div class="form-note">Already have an account? <button type="button" id="goLogin">Log in</button></div>
     </form>
   </div>
+  <p class="footer-credit" style="margin-top: 18px;">© <span id="yearNow"></span> Pentecost Preparatory School</p>
 </div>
 
 <script type="module" src="js/login.js"></script>
