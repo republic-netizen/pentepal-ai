@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PentePal — Log in</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-banner">
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode"></button>
+      <div class="auth-crest"><img src="logo.jpg" alt="Pentecost Preparatory School crest" /></div>
+      <h1 class="font-display">PentePal</h1>
+      <p>Pentecost Preparatory School</p>
+      <svg class="steps" viewBox="0 0 400 12" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0 12 L0 9 L40 9 L40 6 L80 6 L80 3 L400 3" fill="none" stroke="#4E93C4" stroke-width="1.5" opacity="0.6"/>
+      </svg>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" id="tabLogin" type="button">Log in</button>
+      <button class="tab" id="tabSignup" type="button">Sign up</button>
+    </div>
+
+    <div class="banner-msg notice" id="notice"></div>
+    <div class="banner-msg error" id="loginError"></div>
+
+    <!-- LOG IN -->
+    <form class="panel" id="loginPanel" novalidate>
+      <div class="field">
+        <label for="loginUsername">Username</label>
+        <input type="text" id="loginUsername" autocomplete="username" placeholder="e.g. jane_mensah" />
+      </div>
+      <div class="field">
+        <label for="loginPw">Password</label>
+        <input type="password" id="loginPw" autocomplete="current-password" placeholder="Enter your password" />
+      </div>
+      <button type="submit" class="submit-btn" id="loginBtn">Log in</button>
+      <div class="form-note">New to PentePal? <button type="button" id="goSignup">Create an account</button></div>
+    </form>
+
+    <!-- SIGN UP -->
+    <form class="panel hidden" id="signupPanel" novalidate>
+      <div class="banner-msg error" id="signupError"></div>
+      <div class="field">
+        <label for="signupUsername">Username</label>
+        <input type="text" id="signupUsername" autocomplete="username" placeholder="e.g. jane_mensah" />
+      </div>
+      <div class="field">
+        <label for="signupEmail">Email</label>
+        <input type="email" id="signupEmail" autocomplete="email" placeholder="e.g. jane.mensah@pentecostprep.edu.gh" />
+      </div>
+      <div class="field">
+        <label for="signupPw">Password</label>
+        <input type="password" id="signupPw" autocomplete="new-password" placeholder="At least 6 characters" />
+      </div>
+      <div class="field">
+        <label for="confirmPw">Confirm password</label>
+        <input type="password" id="confirmPw" autocomplete="new-password" placeholder="Re-enter your password" />
+      </div>
+      <button type="submit" class="submit-btn" id="signupBtn">Create account</button>
+      <div class="form-note">Already have an account? <button type="button" id="goLogin">Log in</button></div>
+    </form>
+  </div>
+</div>
+
+<script type="module" src="js/login.js"></script>
+</body>
+</html>

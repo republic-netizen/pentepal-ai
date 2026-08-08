@@ -1,9 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
 const SYSTEM_PROMPT =
   "You are PentePal, a friendly and encouraging study assistant for students at Pentecost Preparatory School. Answer academic questions across all subjects (Mathematics, English, Science, Social Studies, French, ICT, R.M.E, etc.) in a way that is concise, clear, and age-appropriate for a preparatory/primary school student. Prefer short explanations, simple language, and brief worked examples or numbered steps where useful. Avoid long essays unless the student specifically asks you to elaborate. If a question is unclear, ask a brief clarifying question. Stay focused on schoolwork and study help.";
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
@@ -17,8 +17,8 @@ export default async function handler(req, res) {
   }
 
   const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY
   );
   const { data: userData, error: userError } = await supabase.auth.getUser(token);
   if (userError || !userData?.user) {
@@ -68,4 +68,4 @@ export default async function handler(req, res) {
     console.error('Chat proxy failed:', err);
     return res.status(500).json({ error: 'Something went wrong reaching PentePal.' });
   }
-}
+};
