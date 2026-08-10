@@ -334,6 +334,23 @@ button { font-family: inherit; }
 #sendBtn:hover { background: var(--sea); }
 #sendBtn:disabled { background: var(--mist); cursor: not-allowed; }
 
+#micBtn {
+  flex-shrink: 0; width: 42px; height: 42px; border-radius: 50%; border: 1.5px solid var(--line);
+  background: var(--foam); color: var(--navy); display: flex;
+  align-items: center; justify-content: center; cursor: pointer;
+}
+#micBtn:hover { background: var(--line); }
+#micBtn.recording {
+  background: var(--error); border-color: var(--error); color: var(--white);
+  animation: pulse-mic 1.4s infinite;
+}
+@keyframes pulse-mic {
+  0% { box-shadow: 0 0 0 0 rgba(179,57,47,0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(179,57,47,0); }
+  100% { box-shadow: 0 0 0 0 rgba(179,57,47,0); }
+}
+#micBtn.unsupported { display: none; }
+
 @media (max-width: 820px) {
   .sidebar {
     position: fixed; top: 0; left: 0; bottom: 0; z-index: 30;
