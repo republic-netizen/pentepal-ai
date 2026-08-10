@@ -338,3 +338,55 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
   await supabase.auth.signOut();
   window.location.href = 'login.html';
 });
+
+// ---------- Speech to text ----------
+const micBtn = document.getElementById('micBtn');
+const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if (SpeechRecognitionAPI) {
+  const recognition = new SpeechRecognitionAPI();
+  recognition.lang = 'en-US';
+  recognition.continuous = false;
+  recognition.interimResults = true;
+
+  let recognizing = false;
+
+  recognition.onstart = () => {
+    recognizing = true;
+    micBtn.classList.add('recording');
+    micBtn.setAttribute('aria-label', 'Stop recording');
+  };
+  recognition.onend = () => {
+    recognizing = false;
+    micBtn.classList.remove('recording');
+    micBtn.setAttribute('aria-label', 'Speak your question');
+  };
+  recognition.onerror = (event) => {
+    console.error('Speech recognition error:', event.error);
+    recognizing = false;
+    micBtn.classList.remove('recording');
+  };
+  recognition.onresult = (event) => {
+    let transcript = '';
+    for (let i = 0; i < event.results.length; i++) {
+      transcript += event.results[i][0].transcript;
+    }
+    promptInput.value = transcript;
+    autoGrow();
+    sendBtn.disabled = !promptInput.value.trim();
+  };
+
+  micBtn.addEventListener('click', () => {
+    if (recognizing) {
+      recognition.stop();
+    } else {
+      promptInput.value = '';
+      autoGrow();
+      recognition.start();
+    }
+  });
+} else {
+  // Not supported in this browser (e.g. Firefox) — hide the button
+  // rather than show something that won't work.
+  micBtn.classList.add('unsupported');
+}
